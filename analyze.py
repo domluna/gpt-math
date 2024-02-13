@@ -26,7 +26,10 @@ for file in os.listdir(data_path):
 # Sort the experiments by accuracy in descending order
 sorted_accuracies = {k: v for k, v in sorted(accuracy_dict.items(), key=lambda item: item[1], reverse=True)}
 
-print(sorted_accuracies)
+# dump this to a file
+with open(current_directory / "results.txt", "w") as file:
+    for key, value in sorted_accuracies.items():
+        file.write(f"{key} : {value}\n")
 
 # Plotting
 plt.figure(figsize=(10, 6))
