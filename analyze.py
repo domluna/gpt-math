@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import pathlib
+import json
 
 # Path to the directory containing the data files
 current_directory = pathlib.Path(__file__).parent
@@ -27,9 +28,8 @@ for file in os.listdir(data_path):
 sorted_accuracies = {k: v for k, v in sorted(accuracy_dict.items(), key=lambda item: item[1], reverse=True)}
 
 # dump this to a file
-with open(current_directory / "results.txt", "w") as file:
-    for key, value in sorted_accuracies.items():
-        file.write(f"{key} : {value}\n")
+with open(current_directory / "results.json", "w") as file:
+    json.dump(sorted_accuracies, file, indent=4)
 
 # Plotting
 plt.figure(figsize=(10, 6))
