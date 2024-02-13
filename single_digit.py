@@ -1,5 +1,4 @@
 from openai import OpenAI
-import random
 import math
 import openai
 import fire
@@ -7,6 +6,7 @@ import pandas as pd
 from time import time
 import tqdm
 import pathlib
+import itertools
 from prompts import SYSTEM_MESSAGE
 
 def load_api_key():
@@ -16,18 +16,7 @@ def load_api_key():
                 return line.split('=')[1].strip()
     return None
 
-def random_bigint(k: int) -> int:
-    i = 0
-    ret = ''
-    while i < k:
-        rand = random.randint(0, 9)
-        if rand == 0 and i == 0:
-            continue
-        ret += str(rand)
-        i += 1
-    return int(ret)
-
-def send_message(client: openai.OpenAI, num1: int, num2: int, top_logprobs=0, logit_bias=None) -> int:
+def send_message(client: openai.OpenAI, num1: int, num2: int, top_logprobs=0):
     prompt = f"{num1} + {num2} = "
 
     kwargs = dict(
@@ -42,12 +31,8 @@ def send_message(client: openai.OpenAI, num1: int, num2: int, top_logprobs=0, lo
         kwargs['logprobs'] = True
         kwargs['top_logprobs'] = top_logprobs
 
-    if logit_bias:
-        kwargs['logit_bias'] = logit_bias
-
     completion = client.chat.completions.create(**kwargs)
     print(completion)
-    out = completion.choices[0].message.content
 
     if top_logprobs > 0:
         print("Top Logprobs")
@@ -60,10 +45,10 @@ def send_message(client: openai.OpenAI, num1: int, num2: int, top_logprobs=0, lo
                 ret += " ... lobprobs: [" +  ','.join(s) + "]"
             print(ret)
 
+    out = completion.choices[0].message.content
     return int(out)
 
-
-def addition_experiment(n: int, k1: int, k2: int, top_logprobs=0, use_logit_bias=False):
+def addition_experiment(top_logprobs=0, repeats=10):
     """
     n: int - the number of random addition problems to generate
     k: int - the number of digits in the random numbers to add
@@ -71,41 +56,25 @@ def addition_experiment(n: int, k1: int, k2: int, top_logprobs=0, use_logit_bias
     key = load_api_key()
     client = OpenAI(api_key=key)
 
-    # you need a large bias for the single tokens to outweigh the 3 and 2 digit tokens.
-    bias = 20
-    logit_bias = {
-        '15': bias, # 0
-        '16': bias, # 1
-        '17': bias, # 2
-        '18': bias, # 3
-        '19': bias, # 4
-        '20': bias, # 5
-        '21': bias, # 6
-        '22': bias, # 7
-        '23': bias, # 8
-        '24': bias, # 9 
-    }
-    logit_bias['100257'] = int(15) # eot token
-
-    nums = [(random_bigint(k1), random_bigint(k2)) for _ in range(n)]
-    results = []
+    nums = list(itertools.product(range(1, 10), repeat=2))
+    outs = []
 
     start_time = time()
-    for (a, b) in tqdm.tqdm(nums):
-        print(f"Adding {a} and {b}")
-        if use_logit_bias:
-            out = send_message(client, a, b, top_logprobs, logit_bias)
-        out = send_message(client, a, b, top_logprobs)
-        print(f"Got: {out}, {a+b==out}")
-        results.append((a, b, out))
+    for _ in range(repeats):
+        for (a, b) in tqdm.tqdm(nums):
+            print(f"Adding {a} and {b}")
+            out = send_message(client, a, b, top_logprobs)
+            print(f"Got: {out}, {a+b==out}")
+            outs.append((a, b, out))
 
     elapsed_time = time() - start_time
     print(f"Total elapsed time: {elapsed_time} seconds")
 
     # Write outputs to a CSV file with Pandas
     columns = ['input_a', 'input_b', 'output']
-    df = pd.DataFrame(results, columns=columns)
-    output_file = pathlib.Path(__file__).parent / "data" / f"addition_experiment_{n}_{k1}_{k2}.csv"
+    df = pd.DataFrame(outs, columns=columns)
+    filename = f"single_digit.csv"
+    output_file = pathlib.Path(__file__).parent / "data" / filename
     print("Writing to", output_file)
     df.to_csv(output_file, index=False)
         

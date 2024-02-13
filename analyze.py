@@ -3,15 +3,14 @@ import os
 import matplotlib.pyplot as plt
 import pathlib
 import json
+from pathlib import Path
 
 # Path to the directory containing the data files
 current_directory = pathlib.Path(__file__).parent
 data_path = current_directory / "data"
 
 # Function to calculate accuracy for a given CSV file
-def calculate_accuracy(file_path):
-    data = pd.read_csv(file_path)
-
+def calculate_accuracy(data: pd.DataFrame) -> float:
     predictions = []
     for _, row in data.iterrows():
         prediction = int(row['input_a']) + int(row['input_b']) == int(row['output'])
@@ -23,8 +22,9 @@ def calculate_accuracy(file_path):
 accuracy_dict = {}
 for file in os.listdir(data_path):
     if file.endswith(".csv"):
-        file_path = os.path.join(data_path, file)
-        accuracy = calculate_accuracy(file_path)
+        file_path = data_path / file
+        data = pd.read_csv(file_path)
+        accuracy = calculate_accuracy(data)
         accuracy_dict[file] = accuracy
 
 # Sort the experiments by accuracy in descending order
