@@ -11,9 +11,12 @@ data_path = current_directory / "data"
 # Function to calculate accuracy for a given CSV file
 def calculate_accuracy(file_path):
     data = pd.read_csv(file_path)
-    correct_predictions = sum(data['input_a'] + data['input_b'] == data['output'])
-    total_predictions = len(data)
-    accuracy = correct_predictions / total_predictions
+
+    predictions = []
+    for _, row in data.iterrows():
+        prediction = int(row['input_a']) + int(row['input_b']) == int(row['output'])
+        predictions.append(prediction)
+    accuracy = sum(predictions) / len(predictions)
     return accuracy
 
 # Read each file and calculate its accuracy
