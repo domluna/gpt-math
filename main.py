@@ -31,11 +31,12 @@ def send_message(client: openai.OpenAI, num1: int, num2: int, top_logprobs=0, lo
     prompt = f"{num1} + {num2} = "
 
     kwargs = dict(
-      model="gpt-4-turbo-preview",
-      messages=[
-        {"role": "system", "content": SYSTEM_MESSAGE},
-        {"role": "user", "content": prompt}
-      ],
+        model="gpt-4-turbo-preview",
+        messages=[
+          {"role": "system", "content": SYSTEM_MESSAGE},
+          {"role": "user", "content": prompt}
+        ],
+        temperature=0.0,
     )
 
     if top_logprobs > 0:

@@ -1,6 +1,6 @@
 # GPT Math
 
-the purpose of these experiments is to determine how well gpt4 can add two integers of arbitrary length. GPT4 is used because it's the most capable model.
+the purpose of these experiments is to determine how well gpt4 can add two integers of arbitrary size. GPT4 is used because it's the most capable model.
 
 ## Notes
 
@@ -11,3 +11,9 @@ This plays a bit when the logit bias for the eot token is increased as well. How
 If the logit bias for the eot token is not increased then single digit tokens are returned until the max token limit is reached. So we need to increase the logit bias for the eot token as well. The problem then becomes the model favors creating 1-2 total digits and then returning the eot token, even for a large number where that's clearly nowhere near the correct answer.
 
 It could be that because GPT is thinking in a much larger space ~990 possible outcomes (all 3 digit and 2 digit tokens) that the quality degrades.
+
+perfect accuracy with single token arithmetic - it predicts the output digit and the carry such as
+
+9 + 3 - digit: 2, carry: 1
+
+this, done over and over is the entire algorithm, and so the model should be able to get it right no matter the size of the number.

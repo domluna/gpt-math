@@ -2,12 +2,9 @@ from openai import OpenAI
 import math
 import openai
 import fire
-import pandas as pd
 from time import time
-import tqdm
-import pathlib
-import itertools
-from prompts import SYSTEM_MESSAGE
+from prompts import LONG_ADDITION_SYSTEM_MESSAGE
+import random
 
 def load_api_key():
     with open('.env') as f:
@@ -16,13 +13,24 @@ def load_api_key():
                 return line.split('=')[1].strip()
     return None
 
-def send_message(client: openai.OpenAI, num1: int, num2: int, top_logprobs=0):
-    prompt = f"{num1} + {num2} = "
+def random_bigint(k: int) -> str:
+    i = 0
+    ret = ''
+    while i < k:
+        rand = random.randint(0, 9)
+        if rand == 0 and i == 0:
+            continue
+        ret += str(rand)
+        i += 1
+    return ret
+
+def send_message(client: openai.OpenAI, num1: int, num2: int, carry: int, end: bool, top_logprobs=0):
+    prompt = f"{num1} {num2} {carry} {str(end).lower()}"
 
     kwargs = dict(
         model="gpt-4-turbo-preview",
         messages=[
-          {"role": "system", "content": SYSTEM_MESSAGE},
+          {"role": "system", "content": LONG_ADDITION_SYSTEM_MESSAGE},
           {"role": "user", "content": prompt}
         ],
         temperature=0.0,
@@ -47,9 +55,15 @@ def send_message(client: openai.OpenAI, num1: int, num2: int, top_logprobs=0):
             print(ret)
 
     out = completion.choices[0].message.content
-    return int(out)
 
-def addition_experiment(top_logprobs=0, repeats=10):
+    # parse "2 1" into 2 and 1
+    ret = out.split()
+    if len(ret) == 1:
+        return {'result': int(ret[0]), 'carry': 0}
+    return {'result': int(ret[0]), 'carry': int(ret[1])}
+
+
+def addition_experiment(k: int, top_logprobs=0):
     """
     n: int - the number of random addition problems to generate
     k: int - the number of digits in the random numbers to add
@@ -57,27 +71,27 @@ def addition_experiment(top_logprobs=0, repeats=10):
     key = load_api_key()
     client = OpenAI(api_key=key)
 
-    nums = list(itertools.product(range(1, 10), repeat=2))
-    outs = []
+    num1 = random_bigint(k)
+    num2 = random_bigint(k)
 
     start_time = time()
-    for _ in range(repeats):
-        for (a, b) in tqdm.tqdm(nums):
-            print(f"Adding {a} and {b}")
-            out = send_message(client, a, b, top_logprobs)
-            print(f"Got: {out}, {a+b==out}")
-            outs.append((a, b, out))
+    carry = 0
+    ret = ''
+    for i, (a, b) in enumerate(zip(reversed(num1), reversed(num2))):
+        end = i == len(num1) - 1
+        print(f"Adding digit {i+1} - {a} and {b} with carry {carry}, end={end}")
+        out = send_message(client, int(a), int(b), carry, end, top_logprobs)
+        result = out['result']
+        carry = out['carry']
+        print(f"Got: {result}, {result} and carry {carry}")
+        ret = str(result) + ret
 
     elapsed_time = time() - start_time
     print(f"Total elapsed time: {elapsed_time} seconds")
-
-    # Write outputs to a CSV file with Pandas
-    columns = ['input_a', 'input_b', 'output']
-    df = pd.DataFrame(outs, columns=columns)
-    filename = f"single_digit.csv"
-    output_file = pathlib.Path(__file__).parent / "data" / filename
-    print("Writing to", output_file)
-    df.to_csv(output_file, index=False)
+    print(f"Num1: {num1}")
+    print(f"Num2: {num2}")
+    print(f"Output: {ret}")
+    print(f"Expected: {int(num1) + int(num2)}, Correct: {ret == str(int(num1) + int(num2))}")
         
 if __name__ == '__main__':
     fire.Fire(addition_experiment)
