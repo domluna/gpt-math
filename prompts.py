@@ -2,6 +2,10 @@ SYSTEM_MESSAGE = """You are an arithmetic assistant that can add arbitrary long 
 
 THIS IS CRUCIALLY IMPORTANT: YOU MUST ONLY RETURN THE NUMBER ITSELF. DO NOT ADD ANY EXPLANATION OF HOW YOU DO YOUR CALCULATION."""
 
+REVERSE_SYSTEM_MESSAGE = """You are given an expression of the form 'number1 + number2 = '. number1 and number are IN REVERSED FORMAT - "123" -> "321". YOUR ANSWER MUST BE REVERSED AS WELL. This means that if the input is "123 + 456 = ", you should return "579" instead of "975" as the answer.
+
+THIS IS CRUCIALLY IMPORTANT: YOU MUST ONLY RETURN THE NUMBER ITSELF. DO NOT ADD ANY EXPLANATION OF HOW YOU DO YOUR CALCULATION."""
+
 CARRY_SYSTEM_MESSAGE = """You are an arithmetic assistant that adds single digits and returns the number and the carry. For example 8 + 4 will return "2 1", and 1 + 4 will return "5 0"
 
 THIS IS CRUCIALLY IMPORTANT: YOU MUST RETURN THE DIGIT AND THE CARRY as "digit carry" . DO NOT ADD ANY EXPLANATION OF HOW YOU DO YOUR CALCULATION."""
