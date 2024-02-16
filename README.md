@@ -1,5 +1,11 @@
 # GPT Math
 
+To run the experiments you need to put your OpenAI api key in a .env file like so:
+
+```sh
+OPENAI_API_KEY=xxxxxxx
+```
+
 the purpose of these experiments is to determine how well gpt4 can add two integers of arbitrary size. GPT4 is used because it's the most capable model.
 
 ## Notes

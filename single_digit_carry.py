@@ -83,7 +83,7 @@ def addition_experiment(top_logprobs=0, repeats=10):
     # Write outputs to a CSV file with Pandas
     columns = ["input_a", "input_b", "output", "carry"]
     df = pd.DataFrame(outs, columns=columns)
-    filename = f"single_digit_carry.csv"
+    filename = "single_digit_carry.csv"
     output_file = pathlib.Path(__file__).parent / "data" / filename
     print("Writing to", output_file)
     df.to_csv(output_file, index=False)

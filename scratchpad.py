@@ -1,13 +1,12 @@
 from openai import OpenAI
 import random
-import math
 import openai
 import fire
 import pandas as pd
 from time import time
 import tqdm
 import pathlib
-from prompts import SYSTEM_MESSAGE
+from prompts import SCRATCHPAD_MESSAGE
 
 
 def load_api_key():
@@ -30,46 +29,35 @@ def random_bigint(k: int) -> int:
     return int(ret)
 
 
-def send_message(
-    client: openai.OpenAI, num1: int, num2: int, top_logprobs=3, logit_bias=None
-) -> int:
+def send_message(client: openai.OpenAI, num1: int, num2: int) -> int:
     prompt = f"{num1} + {num2} = "
 
     kwargs = dict(
         model="gpt-4-turbo-preview",
         messages=[
-            {"role": "system", "content": SYSTEM_MESSAGE},
+            {"role": "system", "content": SCRATCHPAD_MESSAGE},
             {"role": "user", "content": prompt},
         ],
         temperature=0.0,
+        max_tokens=4096,
     )
 
-    if top_logprobs > 0:
-        kwargs["logprobs"] = True
-        kwargs["top_logprobs"] = top_logprobs
-
-    if logit_bias:
-        kwargs["logit_bias"] = logit_bias
-
     completion = client.chat.completions.create(**kwargs)
+    print(completion.usage)
     out = completion.choices[0].message.content
+    print("Scratchpad output:")
+    print(out)
 
-    if num1 + num2 != int(out) and top_logprobs > 0:
-        print("Incorrect output. Got:", out, "Expected:", num1 + num2)
-        print("Top Logprobs")
-        for i, logprob in enumerate(completion.choices[0].logprobs.content):
-            ret = f"{i}, Chosen Token = '{logprob.token}'"
-            s = []
-            for t in logprob.top_logprobs:
-                s.append(f"'{t.token}' - {round(math.exp(t.logprob)*100,2)}")
-            if s:
-                ret += " ... lobprobs: [" + ",".join(s) + "]"
-            print(ret)
+    # find the part of the message that is
+    # Final result: <final result>
+    out = out.split("Final result: ")[1].strip()
+    print("Got:", out)
+    print("Expected:", num1 + num2)
 
     return int(out)
 
 
-def addition_experiment(n: int, k1: int, k2: int, top_logprobs=0, use_logit_bias=False):
+def addition_experiment(n: int, k1: int, k2: int):
     """
     n: int - the number of random addition problems to generate
     k: int - the number of digits in the random numbers to add
@@ -77,31 +65,13 @@ def addition_experiment(n: int, k1: int, k2: int, top_logprobs=0, use_logit_bias
     key = load_api_key()
     client = OpenAI(api_key=key)
 
-    # you need a large bias for the single tokens to outweigh the 3 and 2 digit tokens.
-    bias = 20
-    logit_bias = {
-        "15": bias,  # 0
-        "16": bias,  # 1
-        "17": bias,  # 2
-        "18": bias,  # 3
-        "19": bias,  # 4
-        "20": bias,  # 5
-        "21": bias,  # 6
-        "22": bias,  # 7
-        "23": bias,  # 8
-        "24": bias,  # 9
-    }
-    logit_bias["100257"] = 15  # eot token
-
     nums = [(random_bigint(k1), random_bigint(k2)) for _ in range(n)]
     results = []
 
     start_time = time()
     for a, b in tqdm.tqdm(nums):
         print(f"Adding {a} and {b}")
-        if use_logit_bias:
-            out = send_message(client, a, b, top_logprobs, logit_bias)
-        out = send_message(client, a, b, top_logprobs)
+        out = send_message(client, a, b)
         print(f"Got: {out}, {a+b==out}")
         results.append((a, b, out))
 
@@ -114,7 +84,7 @@ def addition_experiment(n: int, k1: int, k2: int, top_logprobs=0, use_logit_bias
     output_file = (
         pathlib.Path(__file__).parent
         / "data"
-        / f"addition_experiment_{n}_{k1}_{k2}.csv"
+        / f"scratchpad_addition_experiment_{n}_{k1}_{k2}.csv"
     )
     print("Writing to", output_file)
     df.to_csv(output_file, index=False)
