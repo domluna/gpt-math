@@ -1,14 +1,24 @@
 # GPT Math
 
+See the [blog post](https://domluna.com/blog/gpt-math).
+
 To run the experiments you need to put your OpenAI api key in a .env file like so:
 
 ```sh
 OPENAI_API_KEY=xxxxxxx
 ```
 
-the purpose of these experiments is to determine how well gpt4 can add two integers of arbitrary size. GPT4 is used because it's the most capable model.
+Dependencies:
 
-## Notes
+```sh
+openai
+fire
+pandas
+matplotlib
+tqdm
+```
+
+### Very Rough Notes
 
 Difficult to return single tokens, i.e. "1", "1", "5" instead of "115", even with a large logit bias towards single tokens. ~15 a shift begins to occur, but prior to that 3 digit tokens are still selected. My hypothesis why this is the case is that GPT learns to use 2 or 3 digit tokens for almost everything numerical and then only uses single tokens when they will be followed by a non-digit token.
 
